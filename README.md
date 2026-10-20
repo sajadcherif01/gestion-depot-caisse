@@ -1,6 +1,6 @@
 # Dépôt & Caisse
 
-Application web en français pour les sorties de dépôt, les soldes clients et la caisse quotidienne. Elle est pensée pour GitHub Pages ou tout hébergement statique, avec Supabase Auth (e-mail/mot de passe) et RLS par utilisateur.
+Application web en français pour l’historique des sorties de dépôt par client et la caisse quotidienne. Elle est pensée pour GitHub Pages ou tout hébergement statique, avec Supabase Auth (e-mail/mot de passe) et RLS par utilisateur.
 
 Les styles Tailwind sont compilés dans `styles.css`. Après une modification de `src/input.css` ou de l’interface, exécutez `npm run build`.
 
