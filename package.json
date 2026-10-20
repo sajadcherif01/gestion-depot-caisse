@@ -1,0 +1,19 @@
+{
+  "name": "gestion-depot-caisse",
+  "version": "1.0.0",
+  "description": "Application web en français pour les sorties de dépôt, les soldes clients et la caisse quotidienne. Elle est pensée pour GitHub Pages ou tout hébergement statique, avec Supabase Auth (e-mail/mot de passe) et RLS par utilisateur.",
+  "main": "app.js",
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/input.css -o ./styles.css --minify",
+    "build": "npm run build:css",
+    "test": "node --check app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}
