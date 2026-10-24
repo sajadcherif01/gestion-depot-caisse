@@ -23,6 +23,7 @@ create table if not exists public.flux_monetaire (
   categorie text not null,
   description text,
   montant numeric(14,2) not null check (montant > 0),
+  mode_paiement text not null default 'Cash' check (mode_paiement in ('Cash', 'Chèque', 'LC')),
   -- Nullable: necessary to attribute a "Règlement Client" to the right balance.
   client_nom text,
   created_at timestamptz not null default now(),
