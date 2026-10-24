@@ -30,7 +30,7 @@
     sorties = s || []; flux = f || []; render();
   }
 
-  function render() { renderKpis(); renderSorties(); renderFlux(); renderMonthlyDashboard(); renderClientPreview(); updateClientSuggestion(); icons(); }
+  function render() { renderKpis(); renderSorties(); renderFlux(); renderMonthlyDashboard(); renderWeeklyDashboard(); renderClientPreview(); updateClientSuggestion(); icons(); }
   function ensureCashInterface() {
     const form = $('#flux-form');
     if (!form.elements.mode_paiement) {
@@ -38,6 +38,9 @@
     }
     if (!$('#monthly-dashboard')) {
       $('#caisse-panel').insertAdjacentHTML('beforeend', '<article id="monthly-dashboard" class="card mt-6 overflow-hidden"><div class="mb-4"><p class="text-sm font-semibold text-brand-700">SUIVI MENSUEL</p><h3 id="monthly-title" class="section-title mt-1">Tableau mensuel</h3></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Sorties stock</th><th>Entrées</th><th>Dépenses</th><th>Net</th></tr></thead><tbody id="monthly-body"></tbody><tfoot><tr><td class="table-total-label">Total du mois</td><td id="monthly-sorties-total" class="table-total-value">0</td><td id="monthly-entrees-total" class="table-total-value text-emerald-700">0,00 DH</td><td id="monthly-depenses-total" class="table-total-value text-red-700">0,00 DH</td><td id="monthly-net-total" class="table-total-value">0,00 DH</td></tr></tfoot></table></div></article>');
+    }
+    if (!$('#weekly-dashboard')) {
+      $('#monthly-dashboard').insertAdjacentHTML('afterend', '<article id="weekly-dashboard" class="card mt-6 overflow-hidden"><div class="mb-4"><p class="text-sm font-semibold text-brand-700">SUIVI HEBDOMADAIRE</p><h3 id="weekly-title" class="section-title mt-1">Récapitulatif hebdomadaire</h3><p class="mt-1 text-sm text-slate-500">Du lundi au dimanche — montants Cash uniquement.</p></div><div class="table-wrap"><table><thead><tr><th>Jour</th><th>Sorties stock</th><th>Entrées</th><th>Dépenses</th><th>Net</th></tr></thead><tbody id="weekly-body"></tbody><tfoot><tr><td class="table-total-label">Total de la semaine</td><td id="weekly-sorties-total" class="table-total-value">0</td><td id="weekly-entrees-total" class="table-total-value text-emerald-700">0,00 DH</td><td id="weekly-depenses-total" class="table-total-value text-red-700">0,00 DH</td><td id="weekly-net-total" class="table-total-value">0,00 DH</td></tr></tfoot></table></div></article>');
     }
   }
   function renderKpis() {
@@ -91,6 +94,30 @@
     $('#monthly-depenses-total').textContent = money(totals.depenses);
     $('#monthly-net-total').textContent = money(totals.entrees - totals.depenses);
     $('#monthly-net-total').className = `table-total-value ${totals.entrees - totals.depenses >= 0 ? 'text-emerald-700' : 'text-red-700'}`;
+  }
+  function renderWeeklyDashboard() {
+    const selected = new Date(`${activeDate()}T12:00:00`);
+    const weekday = (selected.getDay() + 6) % 7;
+    const monday = new Date(selected); monday.setDate(selected.getDate() - weekday);
+    const dates = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(monday); date.setDate(monday.getDate() + index);
+      return date.toLocaleDateString('en-CA');
+    });
+    const label = new Intl.DateTimeFormat('fr-MA', { day: '2-digit', month: 'long', year: 'numeric' });
+    $('#weekly-title').textContent = `Semaine du ${label.format(monday)} au ${label.format(new Date(`${dates[6]}T12:00:00`))}`;
+    const rows = dates.map(date => {
+      const stock = sorties.filter(x => x.date_operation === date).reduce((sum, x) => sum + Number(x.quantite), 0);
+      const entrees = flux.filter(x => x.date_operation === date && x.type_flux === 'entree' && isCash(x)).reduce((sum, x) => sum + amount(x.montant), 0);
+      const depenses = flux.filter(x => x.date_operation === date && x.type_flux === 'depense' && isCash(x)).reduce((sum, x) => sum + amount(x.montant), 0);
+      return { date, stock, entrees, depenses, net: entrees - depenses };
+    });
+    $('#weekly-body').innerHTML = rows.map(x => `<tr><td class="font-semibold">${new Intl.DateTimeFormat('fr-MA', { weekday: 'long', day: '2-digit', month: '2-digit' }).format(new Date(`${x.date}T12:00:00`))}</td><td>${x.stock}</td><td class="money-positive">${money(x.entrees)}</td><td class="money-negative">${money(x.depenses)}</td><td class="${x.net >= 0 ? 'money-positive' : 'money-negative'}">${money(x.net)}</td></tr>`).join('');
+    const totals = rows.reduce((total, x) => ({ stock: total.stock + x.stock, entrees: total.entrees + x.entrees, depenses: total.depenses + x.depenses }), { stock: 0, entrees: 0, depenses: 0 });
+    $('#weekly-sorties-total').textContent = totals.stock;
+    $('#weekly-entrees-total').textContent = money(totals.entrees);
+    $('#weekly-depenses-total').textContent = money(totals.depenses);
+    $('#weekly-net-total').textContent = money(totals.entrees - totals.depenses);
+    $('#weekly-net-total').className = `table-total-value ${totals.entrees - totals.depenses >= 0 ? 'text-emerald-700' : 'text-red-700'}`;
   }
   function empty(text, span) { return `<tr><td colspan="${span}" class="py-10 text-center text-slate-500">${text}</td></tr>`; }
   function clients() { const m = new Map(); sorties.forEach(s => { const c = m.get(s.client_nom) || { name:s.client_nom, city:s.ville, movements:0, qty:0, last:s.date_operation }; c.movements++; c.qty += Number(s.quantite); if (s.date_operation > c.last) c.last=s.date_operation; c.city ||= s.ville; m.set(s.client_nom, c); }); return [...m.values()].sort((a,b) => b.last.localeCompare(a.last)); }
